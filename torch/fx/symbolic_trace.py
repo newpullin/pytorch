@@ -6,7 +6,7 @@ import torch
 from .node import Argument
 from .graph import Graph
 from .graph_module import GraphModule
-from .proxy import TracerBase
+from .proxy import Proxy, TracerBase
 
 HAS_VARSTUFF = inspect.CO_VARARGS | inspect.CO_VARKEYWORDS
 
@@ -157,7 +157,7 @@ class Tracer(TracerBase):
                 args.append(proxy_placeholder('**' + next(names_iter)))
             root_fn = _patch_function(root_fn, len(args))
 
-        return root_fn, args
+        return fn_for_analysis, args
 
     def trace(self, root: Union[torch.nn.Module, Callable]) -> Graph:
         if isinstance(root, torch.nn.Module):
@@ -187,6 +187,10 @@ class Tracer(TracerBase):
         finally:
             torch.nn.Module.__call__ = orig_call
         return self.graph
+
+    def _proxy_placeholder(self, name: str, type_expr: Optional[Any] = None) -> Proxy:
+        return Proxy(self.create_node('placeholder', name, (), {}, type_expr=type_expr), self)
+
 
 # Symbolic tracing API
 #
